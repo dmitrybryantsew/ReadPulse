@@ -1,0 +1,57 @@
+# ===== .NET =====
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# ===== SQLite =====
+*.db
+*.db-shm
+*.db-wal
+backend/readpulse.db
+
+# ===== Node / Frontend =====
+node_modules/
+frontend/dist/
+frontend/node_modules/
+package-lock.json
+npm-debug.log*
+
+# ===== Secrets & env =====
+appsettings.*.json
+!appsettings.json
+!appsettings.Template.json
+frontend/.env
+*.pem
+*.key
+
+# ===== Uploads / temp =====
+readpulse_uploads/
+backend/Uploads/
+
+# ===== IDE / OS =====
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# ===== Misc =====
+probe-output.txt
+AGENTS.md
+
+# ===== Python cache =====
+__pycache__/
+*.pyc
+
+# ===== Large binaries / example books =====
+bookExample/*.pdf
+bookExample/**/*.pdf
+
+# ===== Machine-specific =====
+dotnet.bat
