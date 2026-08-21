@@ -301,3 +301,62 @@ sudo systemctl start readpulse    # DB auto-recreates + seeds
 | backend systemd | `ASPNETCORE_URLS` | `http://127.0.0.1:5159` |
 | frontend `.env` | `VITE_API_BASE_URL` | `https://your-domain.com` |
 | frontend `.env` | `VITE_GOOGLE_CLIENT_ID` | `xxx.apps.googleusercontent.com` |
+| frontend `.env` | `VITE_BASE_PATH` | `/` (or `/readpulse/` for path-prefix deploy) |
+
+---
+
+## Appendix A: Caddy reverse proxy (path-prefix deploy)
+
+If your VPS already runs **Caddy** on ports 80/443 (e.g. serving another app), you can serve ReadPulse under a path prefix like `/readpulse/` instead of a dedicated domain.
+
+### Frontend `.env` (path-prefix)
+
+```
+VITE_API_BASE_URL=https://your-domain.com/readpulse
+VITE_GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
+VITE_BASE_PATH=/readpulse/
+```
+
+`VITE_BASE_PATH` sets the Vite `base` option so all asset URLs get the prefix.
+
+### Backend CORS (`Program.cs`)
+
+```csharp
+policy.WithOrigins("https://your-domain.com")
+```
+
+Same-origin (path-prefix) requests don't need credentials CORS, but keep `.AllowCredentials()` for safety.
+
+### Caddyfile snippet
+
+```caddyfile
+your-domain.com {
+    # ... your existing routes ...
+
+    # ReadPulse: bare /readpulse -> /readpulse/
+    @readpulseBare path /readpulse
+    redir @readpulseBare /readpulse/ permanent
+
+    # ReadPulse API: /readpulse/api/* -> backend (strip /readpulse prefix)
+    @readpulseApi path /readpulse/api/*
+    handle @readpulseApi {
+        uri strip_prefix /readpulse
+        reverse_proxy localhost:5159
+    }
+
+    # ReadPulse SPA: /readpulse/* -> dist (strip /readpulse prefix)
+    @readpulseSpa path /readpulse/*
+    handle @readpulseSpa {
+        uri strip_prefix /readpulse
+        root * /opt/readpulse/frontend/dist
+        try_files {path} /index.html
+        file_server
+    }
+}
+```
+
+> **Key**: use `@matcher` + `handle` (not `handle_path`) with an explicit `uri strip_prefix` to avoid Caddy's directive-ordering quirks where `try_files` can shadow `reverse_proxy` inside a single `handle_path` block.
+
+### Google OAuth (path-prefix)
+
+Add `https://your-domain.com` to Authorized JavaScript origins in Google Cloud Console (the path prefix doesn't matter for OIDC origins).
